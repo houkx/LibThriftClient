@@ -1,8 +1,14 @@
 # LibThriftClient
 a little、 light and simple thrift client library, for java,android,etc..
 
+# Who need it
+people use [thrift](https://thrift.apache.org/)  protocol, a RCP selection.
+<ul>
+<li> want a litte interface jar,such as android use.</li>
+<li> the server has many iterface methods,but you or your customer just need little some of these.</li>
+</ul>
 # How to use
-if you have a thfit file like this:
+if you have a .thrift file like this:
 ```c
  struct Person{
    1:string name;
