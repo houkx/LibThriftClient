@@ -119,10 +119,17 @@ public class CommonStruct implements TBase<CommonStruct, TFieldIdEnum>, IStruct 
 	}
 
 	@Override
-	public void read(TProtocol protocol) throws TException {
+	public void read(TProtocol protocol) throws TException { 
 		protocol.readStructBegin();
+		Log.d(getClass().getSimpleName(), "read: fields="+Arrays.toString(fields));
+		
+		if (fields == null || fields.length < 1) {
+			protocol.readStructEnd();
+			return;
+		}
 		final short MIN_ID = fields[0].getThriftFieldId();
 		final short MAX_ID = fields[fields.length - 1].getThriftFieldId();
+		
 		while (true) {
 			TField localTField = protocol.readFieldBegin();
 			if (localTField.type == Types.Stop.getTypeId()) {
@@ -140,6 +147,7 @@ public class CommonStruct implements TBase<CommonStruct, TFieldIdEnum>, IStruct 
 						ProtocolHandler protocolHandler = type
 								.getProtocolHandler();
 						if (protocolHandler != null) {
+							Log.d(getClass().getSimpleName(), "read ,field= "+field);
 							protocolHandler.read(protocol, field, this);
 							setFieldsetIsSet(id, true);
 						}
@@ -157,6 +165,19 @@ public class CommonStruct implements TBase<CommonStruct, TFieldIdEnum>, IStruct 
 	public void write(TProtocol protocol) throws TException {
 		if (struct == null) {
 			throw new NullPointerException("struct is null!");
+		}
+//		Log.d(getClass().getSimpleName(), "write: fields="+Arrays.toString(fields)+", fieldValues="+Arrays.toString(fieldValues));
+	    
+		if (fields == null || fields.length < 1) {
+			Log.d(getClass().getSimpleName(), "write: fields="+Arrays.toString(fields));
+			protocol.writeStructBegin(struct);
+			protocol.writeFieldStop();
+			protocol.writeStructEnd();
+			return;
+		}
+		Log.d(getClass().getSimpleName(), "write: length="+fields.length);
+		for(FieldInfo f:fields){
+			Log.d("field:", ""+f);
 		}
 		// copy bean fields to fieldValues[]
 		if (structBean != null) {
@@ -210,8 +231,10 @@ public class CommonStruct implements TBase<CommonStruct, TFieldIdEnum>, IStruct 
 	}
 
 	public void setFieldValues(Object[] fieldValues) {
-		System.arraycopy(fieldValues, 0, this.fieldValues, 0,
-				this.fieldValues.length);
+		if (fieldValues != null && fieldValues.length > 0) {
+			System.arraycopy(fieldValues, 0, this.fieldValues, 0,
+					this.fieldValues.length);
+		}
 	}
 
 	public FieldInfo[] getFields() {
@@ -224,6 +247,10 @@ public class CommonStruct implements TBase<CommonStruct, TFieldIdEnum>, IStruct 
 
 	public Object getStructBean() {
 		return structBean;
+	}
+
+	public Object[] getFieldValues() {
+		return fieldValues;
 	}
 
 }

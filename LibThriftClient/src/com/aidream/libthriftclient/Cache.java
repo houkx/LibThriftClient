@@ -13,7 +13,7 @@ import java.util.Map;
  * @author HouKangxi
  *
  */
-class Cache {
+public class Cache {
 	public static interface IDataCreater<K, V> {
 		V create(K k, Object... args);
 	}

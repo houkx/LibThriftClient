@@ -3,7 +3,6 @@
  */
 package com.aidream.libthriftclient;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -16,8 +15,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.TServiceClient;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TStruct;
-
-import com.aidream.libthriftclient.annotaion.ParameterName;
 
 /**
  * Thrift 通用客户端
@@ -106,14 +103,22 @@ public class CommonClient extends TServiceClient implements
 
 	private Object recv(String methodName, FieldInfo[] returns)
 			throws TException {
+		if (returns == null || returns.length < 1) {
+			return null;
+		}
 		CommonStruct result = new CommonStruct(returns, new TStruct(methodName
 				+ "_result"));
 		receiveBase(result, methodName);
 		switch (returns.length) {
 		case 1: {
-			Object rs = result.getFieldValue(returns[0]);
-			procExceptionResult(rs);
-			return null;
+			FieldInfo re = returns[0];
+			Object rs = result.getFieldValue(re);
+			// returns 数组只有一个元素，可能是返回值，也可能是异常
+			if("ex".equals(re.getFieldName())){
+				// ex 为异常情形
+				procExceptionResult(rs);
+			}
+			return rs;
 		}
 		case 2: {
 			Object rs = result.getFieldValue(returns[0]);
@@ -137,11 +142,11 @@ public class CommonClient extends TServiceClient implements
 		}
 	}
 
-	public FieldInfo[] parseArgurments(Method interfaceMethod,
+	public static FieldInfo[] parseArgurments(Method interfaceMethod,
 			Iterable<String> argNames) {
 		//
 		Type[] paramTypes = interfaceMethod.getGenericParameterTypes();
-		FieldInfo[] rs = null;
+		FieldInfo[] rs;
 		if (paramTypes != null && paramTypes.length > 0) {
 			rs = new FieldInfo[paramTypes.length];
 			short i = 0;
@@ -157,19 +162,39 @@ public class CommonClient extends TServiceClient implements
 		return rs;
 	}
 
-	public FieldInfo[] parseReturns(Method interfaceMethod) {
+	public static FieldInfo[] parseReturns(Method interfaceMethod) {
 		FieldInfo[] returns;
 		Type returnType = interfaceMethod.getGenericReturnType();
-		FieldInfo ex = new FieldInfo("ex", Types.Struct, (short) 1)
-				.setFieldClass(interfaceMethod.getExceptionTypes()[0]);
+		Class<?>[] exceptionClasses = interfaceMethod.getExceptionTypes();
+		int len = 0;
+		Class<?> exceptionClass = null;
+		if (exceptionClasses != null && exceptionClasses.length > 0) {
+			Class<?> exC = exceptionClasses[0];
+			if (exC != TException.class) {
+				exceptionClass = exC;
+			}
+		}
+		
+		if (exceptionClass != null) {
+			++len;
+		}
+		
 		if (returnType == java.lang.Void.TYPE) {
-			returns = new FieldInfo[1];
-			returns[0] = ex;
+			returns = new FieldInfo[len];
+			if (len == 1) {
+				FieldInfo ex = new FieldInfo("ex", Types.Struct, (short) 0)
+				.setFieldClass(exceptionClass);
+				returns[0] = ex;
+			}
 		} else {
-			returns = new FieldInfo[2];
+			returns = new FieldInfo[++len];
 			returns[0] = FieldInfo.parseFieldForType(returnType, "success",
 					(short) 0);
-			returns[1] = ex;
+			if (len == 2) {
+				FieldInfo ex = new FieldInfo("ex", Types.Struct, (short) 1)
+				.setFieldClass(exceptionClass);
+				returns[1] = ex;
+			}
 		}
 		return returns;
 	}
@@ -179,29 +204,12 @@ public class CommonClient extends TServiceClient implements
 	public Object[] create(Method interfaceMethod, Object... args) {
 		Iterable<String> argNames;
 		if (args == null || args.length == 0) {
-			Annotation[][] paramsAnns = interfaceMethod
-					.getParameterAnnotations();
-			String exceptionMsg = "Method %s parameter%s must add Annotation '@ParameterName'!";
-			if (paramsAnns.length == 0) {
-				throw new IllegalArgumentException(String.format(exceptionMsg,
-						interfaceMethod.getName(),"s all"));
+			Class<?>[] ptypes = interfaceMethod.getParameterTypes();
+			List<String> alist = new ArrayList<String>(ptypes.length);
+			for (int i = 0; i < ptypes.length; i++) {
+				alist.add("arg" + i);
 			}
-			List<String> argNamesList = new ArrayList<String>(paramsAnns.length);
-			for (Annotation[] anns : paramsAnns) {
-				ParameterName paramNameAnn = null;
-				for (Annotation ann : anns) {
-					if (ann.annotationType() == ParameterName.class) {
-						paramNameAnn = (ParameterName) ann;
-						break;
-					}
-				}
-				if (paramNameAnn == null) {
-					throw new IllegalArgumentException(String.format(
-							exceptionMsg, interfaceMethod.getName(),"[ " + argNamesList.size() + " ]"));
-				}
-				argNamesList.add(paramNameAnn.value());
-			}
-			argNames = argNamesList;
+			argNames = alist;
 		} else {
 			argNames = (Iterable<String>) args[0];
 		}

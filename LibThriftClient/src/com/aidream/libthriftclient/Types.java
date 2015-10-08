@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.thrift.TException;
-import org.apache.thrift.TFieldIdEnum;
 import org.apache.thrift.protocol.TList;
 import org.apache.thrift.protocol.TMap;
 import org.apache.thrift.protocol.TProtocol;
@@ -113,7 +112,9 @@ public enum Types {
 					if (field.getFieldClass() == ByteBuffer.class) {
 						struct.setFieldValue(field, protocol.readBinary());
 					} else {
-						struct.setFieldValue(field, protocol.readString());
+						String rs = protocol.readString();
+						Log.d("Type::String: readString()",rs);
+						struct.setFieldValue(field, rs);
 					}
 				}
 
@@ -123,8 +124,10 @@ public enum Types {
 						protocol.writeBinary((ByteBuffer) struct
 								.getFieldValue(field));
 					} else {
-						protocol.writeString((String) struct
-								.getFieldValue(field));
+						String rs = (String) struct
+								.getFieldValue(field);
+						Log.d("Type::String: writeString()",rs);
+						protocol.writeString(rs);
 					}
 				}
 			}),
@@ -300,27 +303,5 @@ public enum Types {
 			tp = Struct;// 不存在，则认为是结构体
 		}
 		return tp;
-	}
-	
-	private static class TmpStruct implements IStruct {
-		private Object fieldValue;
-
-		private TmpStruct() {
-		}
-		
-		private TmpStruct(Object value) {
-			this.fieldValue = value;
-		}
-
-		@Override
-		public void setFieldValue(TFieldIdEnum arg0, Object value) {
-			this.fieldValue = value;
-		}
-
-		@Override
-		public Object getFieldValue(TFieldIdEnum arg0) {
-			return fieldValue;
-		}
-
 	}
 }

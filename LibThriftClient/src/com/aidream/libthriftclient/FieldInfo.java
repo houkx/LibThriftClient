@@ -115,4 +115,11 @@ public final class FieldInfo implements TFieldIdEnum {
 		return rsfield;
 	}
 
+	@Override
+	public String toString() {
+		return "FieldInfo [fieldName=" + fieldName + ", thriftFieldId="
+				+ thriftFieldId + ", fieldClass=" + fieldClass + ", fieldType="
+				+ fieldType + "]";
+	}
+	
 }

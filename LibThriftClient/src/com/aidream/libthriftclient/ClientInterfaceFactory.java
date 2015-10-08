@@ -51,8 +51,8 @@ public class ClientInterfaceFactory {
 			for (Map.Entry<Method, List<String>> entry : map.entrySet()) {
 				Method m = entry.getKey();
 				List<String> argNames = entry.getValue();
-				FieldInfo[] args = client.parseArgurments(m, argNames);
-				FieldInfo[] returns = client.parseReturns(m);
+				FieldInfo[] args = CommonClient.parseArgurments(m, argNames);
+				FieldInfo[] returns = CommonClient.parseReturns(m);
 				Cache.getInstance().saveIfaceMethodCache(m,
 						new Object[] { returns, args });
 			}
@@ -63,10 +63,17 @@ public class ClientInterfaceFactory {
 			@Override
 			public Object invoke(Object proxy, Method method, Object[] args)
 					throws Throwable {
-				if(method.getName().equals("toString")){
+				Log.d("InvocationHandler:invoke", method.getName());
+				if (method.getName().equals("toString")) {
 					return ifaceClass.getName();
+				} else if (method.getName().equals("hashCode")) {
+					return System.identityHashCode(proxy);
+				} else if (method.getName().equals("equals")) {
+					return false;
 				}
-				return client.execute(method, args);
+				Object rs = client.execute(method, args);
+				Log.d("InvocationHandler:invoke", method.getName()+": rs="+rs);
+				return rs;
 			}
 		};
 		return (INTERFACE) Proxy.newProxyInstance(ifaceClass.getClassLoader(),
@@ -94,7 +101,7 @@ public class ClientInterfaceFactory {
 	 * @throws NoSuchMethodException
 	 * @throws NoSuchFieldException
 	 */
-	private static Map<Method, List<String>> parseOrigIfaceMethodArgNames(
+	public static Map<Method, List<String>> parseOrigIfaceMethodArgNames(
 			Class<?> ifaceClass) throws NoSuchMethodException,
 			SecurityException, NoSuchFieldException {
 		Class<?> outerClass = ifaceClass.getEnclosingClass();
