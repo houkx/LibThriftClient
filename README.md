@@ -31,7 +31,7 @@ you can write a Iterface and a JavaBean like this:
 public interface MyService{// the name of this Iterface is random as you like
    // you could only have a single method,but the server has manay methods.
    // in this way,you can hide interface to your Customer
-   String sayHi(@ParameterName("aPerson")Person p) throws HelloException;
+   String sayHi(Person p) throws HelloException;
    // the ParameterName of every parameter is same as it in the .thrift file
 }
 public class Person{
